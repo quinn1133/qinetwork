@@ -417,8 +417,8 @@ export default function Chat_screen({
               color: "#65676B",
             }}
           >
-            <p>Qi </p>
-            <p>You're friends on Qi</p>
+            <p>Facebook </p>
+            <p>You're friends on Facebook</p>
           </div>
 
           {!loadingMess && custom ? (

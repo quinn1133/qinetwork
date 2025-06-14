@@ -74,7 +74,7 @@ export default function SearchMenu({ color, setShowSearchMenu, token }) {
           )}
           <input
             type="text"
-            placeholder="Search Qi"
+            placeholder="Search Facebook"
             ref={input}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}

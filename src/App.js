@@ -53,8 +53,6 @@ import PhotoPopup from "./components/photoPopup";
 import Chat_screen from "./components/chat";
 import Saved from "./pages/saved";
 import VerifiRegister from "./pages/verify/VerifiRegister";
-import Explore from "./pages/explore";
-
 function App() {
   const [visible, setVisible] = useState(false);
   const [visiblePost, setVisiblePost] = useState(null);
@@ -106,7 +104,7 @@ function App() {
   };
 
   useEffect(() => {
-    const newSocket = io("http://localhost:5000", {
+    const newSocket = io(`${process.env.REACT_APP_SOCKET_URL}`, {
       transports: ["websocket"],
     });
     setSocket(newSocket);
@@ -1335,23 +1333,6 @@ function App() {
           />
 
           <Route path="/activate/:token" element={<Activate />} exact />
-          <Route
-            path="/explore"
-            element={
-              <Explore
-                socket={socket}
-                getAllPosts={getAllPosts}
-                notifications={notifications}
-                setNotifi={setNotifi}
-                getListMess={getListMess}
-                listMess={listMess}
-                onlineUsers={onlineUsers}
-                openChatWindow={openChatWindow}
-                setOpenChatWindows={setOpenChatWindows}
-              />
-            }
-            exact
-          />
         </Route>
         <Route element={<NotLoggedInRoutes />}>
           <Route path="/login" element={<Login socket={socket} />} exact />

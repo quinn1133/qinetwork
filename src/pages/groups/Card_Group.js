@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Dots } from "../../svg";
 import { followgroup, unfollowgroup, leavegroup } from "../../functions/group";

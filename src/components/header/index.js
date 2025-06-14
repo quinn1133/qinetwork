@@ -73,7 +73,7 @@ export default function Header({
       <div className="header_left">
         <Link to="/" className="header_logo">
           <div className="circle">
-            <img src="../../icons/qi.svg" alt="Qi Logo" style={{ width: "40px", height: "40px" }} />
+            <Logo />
           </div>
         </Link>
         <div
@@ -85,7 +85,7 @@ export default function Header({
           <Search color={color} />
           <input
             type="text"
-            placeholder="Search Qi"
+            placeholder="Search Facebook"
             className="hide_input"
           />
         </div>

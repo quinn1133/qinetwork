@@ -105,6 +105,21 @@
 .shortcut_item span {
   margin-bottom: 3px;
 }
+.fb_copyright {
+  position: fixed;
+  bottom: 14px;
+  left: 10px;
+  font-size: 12px;
+  color: var(--color-secondary);
+  width: 15vw;
+}
+.relative_fb_copyright {
+  position: relative;
+  width: 97%;
+  margin-top: 2rem;
+  font-size: 12px;
+  color: var(--color-secondary);
+}
 .left_home .small_circle {
   background: rgb(214, 214, 214);
 }
