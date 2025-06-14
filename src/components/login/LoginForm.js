@@ -8,7 +8,6 @@ import axios from "axios";
 import { useDispatch } from "react-redux";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
-
 const loginInfos = {
   email: "",
   password: "",
@@ -50,10 +49,10 @@ export default function LoginForm({ setVisible, socket }) {
   return (
     <div className="login_wrap">
       <div className="login_1">
-        <h1 className="qi_logo">Qi</h1>
-        <span>
-          Mạng xã hội Qi - Kết nối và chia sẻ với mọi người trong cuộc sống của bạn.
-        </span>
+        <img src="../../icons/qi.svg" alt="Qi Logo" />
+        <div className="login_text">
+          Qi helps you connect and share with the people in your life.
+        </div>
       </div>
       <div className="login_2">
         <div className="login_2_wrap">
@@ -73,28 +72,28 @@ export default function LoginForm({ setVisible, socket }) {
                 <LoginInput
                   type="text"
                   name="email"
-                  placeholder="Email hoặc số điện thoại"
+                  placeholder="Email address or phone number"
                   onChange={handleLoginChange}
                 />
                 <LoginInput
                   type="password"
                   name="password"
-                  placeholder="Mật khẩu"
+                  placeholder="Password"
                   onChange={handleLoginChange}
                   bottom
                 />
                 <button type="submit" className="blue_btn">
-                  Đăng nhập
+                  Log In
                 </button>
               </Form>
             )}
           </Formik>
-          <div>
+          <div >
             <Link to="/reset" className="forgot_password" style={{marginRight:"20px"}}>
-              Quên mật khẩu?
+              Forgotten password?
             </Link>
             <Link to="/verifi" className="forgot_password">
-              Xác thực tài khoản
+              Verifi acccount!
             </Link>
           </div>
 
@@ -106,9 +105,12 @@ export default function LoginForm({ setVisible, socket }) {
             className="blue_btn open_signup"
             onClick={() => setVisible(true)}
           >
-            Tạo tài khoản mới
+            Create Account
           </button>
         </div>
+        <Link to="/" className="sign_extra">
+          <b>Create a Page</b> for a celebrity, brand or business.
+        </Link>
       </div>
     </div>
   );

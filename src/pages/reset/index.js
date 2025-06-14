@@ -33,7 +33,7 @@ export default function Reset() {
   return (
     <div className="reset">
       <div className="reset_header">
-        <img src="../../../icons/facebook.svg" alt="" />
+        <img src="../../../icons/qi.svg" alt="Qi Logo" />
         {user ? (
           <div className="right_reset">
             <Link to="/profile">

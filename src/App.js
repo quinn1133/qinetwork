@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Link, Routes, Route } from "react-router-dom";
 import Login from "./pages/login";
 import Profile from "./pages/profile";
 import Home from "./pages/home";
@@ -16,35 +16,44 @@ import {
   notificationsReducer,
   listMessReducer,
   listPostSavedReducer,
-  friendspage,
+} from "./functions/reducers";
+import Friends from "./pages/friends";
+import io from "socket.io-client";
+import Post from "./components/post";
+import { notification } from "antd";
+import Search from "./pages/search";
+import Post_detail from "./components/post/Post_detail";
+import ReactPopup from "./components/reactPopup";
+import ReactCommentPopup from "./components/reactPopup/reactCommentPopup";
+import Moment from "react-moment";
+import { setRead } from "./functions/notification";
+import { friendspage } from "./functions/reducers";
+import { getFriendsPageInfos } from "./functions/user";
+import PageGroup from "./pages/groups/PageGroup";
+import Groups from "./pages/groups";
+import { getGroupsJoined } from "./functions/user";
+import { getdiscoverGroups } from "./functions/user";
+import { roommess } from "./functions/reducers";
+import Room_Mess_screen from "./components/chat/RoomMess";
+import ReportMenu from "./components/reportMenu";
+import ReportGroupMenu from "./components/reportMenu/reportGroupMenu";
+import Messages from "./pages/messages";
+import { getUser } from "./functions/user";
+import PhotoDetail from "./components/photoDetail";
+import ReportMenu_Profile from "./components/reportMenu/reportProfile";
+import Verifi from "./pages/verify";
+import {
   friendspageByBirthday,
   groupspage,
   groupdiscoverspage,
   postgroups,
-  roommess
 } from "./functions/reducers";
-import Friends from "./pages/friends";
-import io from "socket.io-client";
-import { notification } from "antd";
-import Search from "./pages/search";
-import PostDetail from "./components/post/Post_detail";
-import ReactPopup from "./components/reactPopup";
-import ReactCommentPopup from "./components/reactPopup/reactCommentPopup";
-import { setRead } from "./functions/notification";
-import PageGroup from "./pages/groups/PageGroup";
-import Groups from "./pages/groups";
-import { getGroupsJoined, getdiscoverGroups, getFriendsByBirthday, getFriendsPageInfos, getUser } from "./functions/user";
-import RoomMessScreen from "./components/chat/RoomMess";
-import ReportMenu from "./components/reportMenu";
-import ReportGroupMenu from "./components/reportMenu/reportGroupMenu";
-import Messages from "./pages/messages";
-import PhotoDetail from "./components/photoDetail";
-import ReportMenuProfile from "./components/reportMenu/reportProfile";
-import Verifi from "./pages/verify";
+import { getFriendsByBirthday } from "./functions/user";
 import PhotoPopup from "./components/photoPopup";
-import ChatScreen from "./components/chat";
+import Chat_screen from "./components/chat";
 import Saved from "./pages/saved";
 import VerifiRegister from "./pages/verify/VerifiRegister";
+import Explore from "./pages/explore";
 
 function App() {
   const [visible, setVisible] = useState(false);
@@ -67,19 +76,8 @@ function App() {
 
   const [visiblePhotoDetail, setVisiblePhotoDetail] = useState(null);
 
-  const [socket, setSocket] = useState(null);
-  const [User, setUser] = useState();
-  const [onlineUsers, setOnlineUsers] = useState([]);
-
-  const [openChatWindows, setOpenChatWindows] = useState([]);
-  const [openChatWindowMess, setOpenChatWindowMess] = useState(null);
-
-  const getUserData = async () => {
-    const res = await getUser(user.token);
-    setUser(res);
-  };
-
   useEffect(() => {
+    
     if (user?.id !== undefined) {
       socket?.emit("newUser", user?.id);
       getDatafriendsByBirthday();
@@ -94,7 +92,18 @@ function App() {
       getListMess();
       getUserData();
     }
-  }, [user?.id, socket, getDatafriendsByBirthday, getAllPosts, getListPostSaved, getDataFriend, getGroups, getDiscoverGroups, getPostGroups, getRoomMess, getNotifications, getListMess, getUserData]);
+  }, [user?.id]);
+  const [socket, setSocket] = useState(null);
+  const [User, setUser] = useState();
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const getUserData = async () => {
+    const res = await getUser(user.token);
+    setUser(res);
+  };
+  const handleLinkClick = (link) => {
+    // Reload the current page
+    window.location.replace(link);
+  };
 
   useEffect(() => {
     const newSocket = io("http://localhost:5000", {
@@ -107,6 +116,8 @@ function App() {
     };
   }, [user]);
 
+  const [openChatWindows, setOpenChatWindows] = useState([]);
+  const [openChatWindowMess, setOpenChatWindowMess] = useState(null);
   const openChatWindow = (room) => {
     const existingWindowIndex = openChatWindows.findIndex(
       (window) => window._id === room._id
@@ -135,6 +146,8 @@ function App() {
     setOpenChatWindows(updatedWindows);
   };
 
+  //add online users
+
   useEffect(() => {
     if (socket === null) return;
     socket.emit("newUser", user?.id);
@@ -144,7 +157,7 @@ function App() {
     return () => {
       socket.off("getOnlineUsers");
     };
-  }, [socket, user?.id]);
+  }, [socket]);
 
   const [photoDetail, setPhotoDetail] = useState("");
   const [{ loading, error, posts }, dispatch] = useReducer(postsReducer, {
@@ -422,13 +435,74 @@ function App() {
   useEffect(() => {
     if (socket === null) return;
     socket.on("getNotification", (data) => {
+      getDataFriend();
+      if (data) {
+        api.open({
+          message: "New notification",
+          description: (
+            <>
+              <div
+                style={{ color: "#0F0F0F" }}
+                // to={data?.link}
+                className="mmenu_item hover3 "
+                onClick={() => {
+                  setReadNotificaion(data?.id);
+                  handleLinkClick(data?.link);
+                }}
+              >
+                <div className="profile_link_active">
+                  <div className="circle_icon_notification">
+                    <img src={data?.sender_picture} alt="" />
+                    <div className="right_bottom_notification">
+                      {reacts.includes(data?.type) ? (
+                        <img
+                          src={`../../../../reacts/${data?.type}.svg`}
+                          alt=""
+                        />
+                      ) : (
+                        <i className={`${data?.type}_icon`}></i>
+                      )}
+                    </div>
+                  </div>
+                  <p>
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: `${data?.description}`,
+                      }}
+                    />
+
+                    <div className="notification_privacy_date_active">
+                      <Moment fromNow interval={30}>
+                        {data?.createdAt}
+                      </Moment>
+                    </div>
+                  </p>
+                </div>
+                <div
+                  className="notification_icon_active"
+                  style={{
+                    width: "10px",
+                    right: "2px",
+                    position: "absolute",
+                  }}
+                />
+              </div>
+            </>
+          ),
+          placement: "bottomLeft",
+        });
+      }
       getNotifications();
-      setReadNotificaion(data._id);
     });
-    return () => {
-      socket.off("getNotification");
-    };
-  }, [socket, getNotifications, setReadNotificaion]);
+
+    socket.on("getMessage", (data) => {
+      getListMess();
+    });
+
+    // return () => {
+    //   socket.off("getMessage");
+    // };
+  }, [socket]);
 
   const getAllPosts = async () => {
     try {
@@ -453,44 +527,859 @@ function App() {
       });
     }
   };
-
   return (
-    <div className={darkTheme ? "dark" : ""}>
+    <div className={darkTheme && "dark"}>
+      {visible && (
+        <CreatePostPopup
+          user={user}
+          setVisible={setVisible}
+          posts={posts}
+          dispatch={dispatch}
+        />
+      )}
+      {visibleReact && (
+        <ReactPopup
+          user={user}
+          setVisibleReact={setVisibleReact}
+          visibleReact={visibleReact}
+          socket={socket}
+        />
+      )}
+      {visibleReactComment && (
+        <ReactCommentPopup
+          user={user}
+          setVisibleReactComment={setVisibleReactComment}
+          visibleReactComment={visibleReactComment}
+          socket={socket}
+        />
+      )}
+      {visiblePost && (
+        <Post_detail
+          post={visiblePost.post}
+          user={user}
+          socket={socket}
+          setVisiblePost={setVisiblePost}
+          visiblePost={visiblePost}
+          visibleReact={visibleReact}
+          setVisibleReact={setVisibleReact}
+          setVisibleReactComment={setVisibleReactComment}
+          visibleReactComment={visibleReactComment}
+          setVisiblePhoto={setVisiblePhoto}
+          page={visiblePost.page}
+          setReportGroup={setReportGroup}
+          setReport={setReport}
+        />
+      )}
+      {visiblePhoto && (
+        <PhotoPopup
+          setVisiblePost={setVisiblePost}
+          setVisibleReact={setVisibleReact}
+          setVisibleReactComment={setVisibleReactComment}
+          visibleReactComment={visibleReactComment}
+          visiblePhoto={visiblePhoto}
+          setVisiblePhoto={setVisiblePhoto}
+          socket={socket}
+        />
+      )}
+      {visiblePhotoDetail && (
+        <PhotoDetail
+          visiblePhotoDetail={visiblePhotoDetail}
+          setVisiblePhotoDetail={setVisiblePhotoDetail}
+        />
+      )}
+      {openChatWindows && (
+        <>
+          {openChatWindows.map((room, index) =>
+            room.room_name ? (
+              <Room_Mess_screen
+                stt={index}
+                showChatRoom={room}
+                socket={socket}
+                onlineUsers={onlineUsers}
+                getListMess={getListMess}
+                closeChatWindow={closeChatWindow}
+                setOpenChatWindowMess={setOpenChatWindowMess}
+                openChatWindowMess={openChatWindowMess}
+                getRoomMess={getRoomMess}
+              />
+            ) : (
+              <Chat_screen
+                stt={index}
+                showChat={room}
+                socket={socket}
+                onlineUsers={onlineUsers}
+                getListMess={getListMess}
+                closeChatWindow={closeChatWindow}
+                setOpenChatWindowMess={setOpenChatWindowMess}
+                openChatWindowMess={openChatWindowMess}
+              />
+            )
+          )}
+        </>
+      )}
+      {report && <ReportMenu setReport={setReport} report={report} />}
+      {reportGroup && (
+        <ReportGroupMenu
+          setReportGroup={setReportGroup}
+          reportGroup={reportGroup}
+        />
+      )}
+      {report_Profile && (
+        <ReportMenu_Profile
+          setReport_Profile={setReport_Profile}
+          report_Profile={report_Profile}
+        />
+      )}
+
+      {reportComment && <ReportMenu setReport={setReport} />}
+      {reportGroupComment && (
+        <ReportGroupMenu setReportGroup={setReportGroup} />
+      )}
       {contextHolder}
       <Routes>
         <Route element={<LoggedInRoutes />}>
-          <Route path="/profile" element={<Profile />} exact />
-          <Route path="/profile/:username" element={<Profile />} exact />
-          <Route path="/friends" element={<Friends />} exact />
-          <Route path="/friends/:type" element={<Friends />} exact />
-          <Route path="/" element={<Home />} exact />
+          <Route
+            path="/messages"
+            element={
+              <Messages
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                setMess={setMess}
+                setOpenChatWindowMess={setOpenChatWindowMess}
+                openChatWindowMess={openChatWindowMess}
+                setOpenChatWindows={setOpenChatWindows}
+                mess={mess}
+                getRoomMess={getRoomMess}
+                setVisiblePhotoDetail={setVisiblePhotoDetail}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/messages/:roomid"
+            element={
+              <Messages
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                setMess={setMess}
+                setOpenChatWindowMess={setOpenChatWindowMess}
+                openChatWindowMess={openChatWindowMess}
+                setOpenChatWindows={setOpenChatWindows}
+                mess={mess}
+                getRoomMess={getRoomMess}
+                setVisiblePhotoDetail={setVisiblePhotoDetail}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/profile"
+            element={
+              <Profile
+                setVisible={setVisible}
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                getNotifications={getNotifications}
+                dataByBirthday={dataByBirthday}
+                getDatafriendsByBirthday={getDatafriendsByBirthday}
+                setVisiblePhoto={setVisiblePhoto}
+                User={User}
+                getUser={getUserData}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                setReport_Profile={setReport_Profile}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/profile&sk=:sk"
+            element={
+              <Profile
+                setVisible={setVisible}
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                getNotifications={getNotifications}
+                dataByBirthday={dataByBirthday}
+                getDatafriendsByBirthday={getDatafriendsByBirthday}
+                setVisiblePhoto={setVisiblePhoto}
+                User={User}
+                getUser={getUserData}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                setReport_Profile={setReport_Profile}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/profile&sk=:sk/album=:album"
+            element={
+              <Profile
+                setVisible={setVisible}
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                getNotifications={getNotifications}
+                dataByBirthday={dataByBirthday}
+                getDatafriendsByBirthday={getDatafriendsByBirthday}
+                setVisiblePhoto={setVisiblePhoto}
+                User={User}
+                getUser={getUserData}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                setReport_Profile={setReport_Profile}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/profile/:IdUser"
+            element={
+              <Profile
+                setVisible={setVisible}
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                getNotifications={getNotifications}
+                dataByBirthday={dataByBirthday}
+                getDatafriendsByBirthday={getDatafriendsByBirthday}
+                setVisiblePhoto={setVisiblePhoto}
+                User={User}
+                getUser={getUserData}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                setReport_Profile={setReport_Profile}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/profile/:IdUser&sk=:sk"
+            element={
+              <Profile
+                setVisible={setVisible}
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                getNotifications={getNotifications}
+                dataByBirthday={dataByBirthday}
+                getDatafriendsByBirthday={getDatafriendsByBirthday}
+                setVisiblePhoto={setVisiblePhoto}
+                User={User}
+                getUser={getUserData}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                setReport_Profile={setReport_Profile}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/profile/:IdUser&sk=:sk/album=:album"
+            element={
+              <Profile
+                setVisible={setVisible}
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                getNotifications={getNotifications}
+                dataByBirthday={dataByBirthday}
+                getDatafriendsByBirthday={getDatafriendsByBirthday}
+                setVisiblePhoto={setVisiblePhoto}
+                User={User}
+                getUser={getUserData}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                setReport_Profile={setReport_Profile}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/profile/:IdUser&post_id:=post_id"
+            element={
+              <Profile
+                setVisible={setVisible}
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                getNotifications={getNotifications}
+                dataByBirthday={dataByBirthday}
+                getDatafriendsByBirthday={getDatafriendsByBirthday}
+                setVisiblePhoto={setVisiblePhoto}
+                User={User}
+                getUser={getUserData}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                setReport_Profile={setReport_Profile}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/profile/:IdUser&post_id:=post_id&comment_id:=comment_id"
+            element={
+              <Profile
+                setVisible={setVisible}
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                getNotifications={getNotifications}
+                dataByBirthday={dataByBirthday}
+                getDatafriendsByBirthday={getDatafriendsByBirthday}
+                setVisiblePhoto={setVisiblePhoto}
+                User={User}
+                getUser={getUserData}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                setReport_Profile={setReport_Profile}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/friends"
+            element={
+              <Friends
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                dataByBirthday={dataByBirthday}
+                getDatafriendsByBirthday={getDatafriendsByBirthday}
+                friendsByBirthdayLoading={friendsByBirthdayLoading}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                getUser={getUserData}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/saved"
+            element={
+              <Saved
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                dataByBirthday={dataByBirthday}
+                getDatafriendsByBirthday={getDatafriendsByBirthday}
+                friendsByBirthdayLoading={friendsByBirthdayLoading}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                listPostSaved={listPostSaved}
+                postGroupsLoading={postGroupsLoading}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                setVisiblePhoto={setVisiblePhoto}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+                getListPostSaved={getListPostSaved}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/friends/:type"
+            element={
+              <Friends
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                dataByBirthday={dataByBirthday}
+                getDatafriendsByBirthday={getDatafriendsByBirthday}
+                friendsByBirthdayLoading={friendsByBirthdayLoading}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/groups"
+            element={
+              <Groups
+                getGroups={getGroups}
+                getDiscoverGroups={getDiscoverGroups}
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                getNotifications={getNotifications}
+                setVisible={setVisible}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                postGroupsLoading={postGroupsLoading}
+                dataPostGroups={dataPostGroups}
+                groupsLoading={groupsLoading}
+                discoverGroupsLoading={discoverGroupsLoading}
+                dataDiscoverGroups={dataDiscoverGroups}
+                dataGroups={dataGroups}
+                setVisiblePhoto={setVisiblePhoto}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                User={User}
+                getUserData={getUserData}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/groups/:type"
+            element={
+              <Groups
+                getGroups={getGroups}
+                getDiscoverGroups={getDiscoverGroups}
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                getNotifications={getNotifications}
+                setVisible={setVisible}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                postGroupsLoading={postGroupsLoading}
+                dataPostGroups={dataPostGroups}
+                groupsLoading={groupsLoading}
+                discoverGroupsLoading={discoverGroupsLoading}
+                dataDiscoverGroups={dataDiscoverGroups}
+                dataGroups={dataGroups}
+                setVisiblePhoto={setVisiblePhoto}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                dataRoomMess={dataRoomMess}
+                User={User}
+                getUserData={getUserData}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/group/:idgroup/:sk/album=:album"
+            element={
+              <PageGroup
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                getNotifications={getNotifications}
+                setVisible={setVisible}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                getGroups={getGroups}
+                getDiscoverGroups={getDiscoverGroups}
+                setVisiblePhoto={setVisiblePhoto}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                dataRoomMess={dataRoomMess}
+                getRoomMess={getRoomMess}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/group/:idgroup/:sk/:type"
+            element={
+              <PageGroup
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                getNotifications={getNotifications}
+                setVisible={setVisible}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                getGroups={getGroups}
+                getDiscoverGroups={getDiscoverGroups}
+                setVisiblePhoto={setVisiblePhoto}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                dataRoomMess={dataRoomMess}
+                getRoomMess={getRoomMess}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/group/:idgroup/:sk"
+            element={
+              <PageGroup
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                getNotifications={getNotifications}
+                setVisible={setVisible}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                getGroups={getGroups}
+                getDiscoverGroups={getDiscoverGroups}
+                setVisiblePhoto={setVisiblePhoto}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                dataRoomMess={dataRoomMess}
+                getRoomMess={getRoomMess}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/group/:idgroup"
+            element={
+              <PageGroup
+                getAllPosts={getAllPosts}
+                socket={socket}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                friendsLoading={friendsLoading}
+                getNotifications={getNotifications}
+                setVisible={setVisible}
+                setVisiblePost={setVisiblePost}
+                visibleReact={visibleReact}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                getGroups={getGroups}
+                getDiscoverGroups={getDiscoverGroups}
+                setVisiblePhoto={setVisiblePhoto}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                dataRoomMess={dataRoomMess}
+                getRoomMess={getRoomMess}
+                setReportGroup={setReportGroup}
+                setReport={setReport}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/"
+            element={
+              <Home
+                loadingAllPosts={loadingAllPosts}
+                setVisible={setVisible}
+                socket={socket}
+                posts={posts}
+                loading={loading}
+                getAllPosts={getAllPosts}
+                notifications={notifications}
+                setVisiblePost={setVisiblePost}
+                visiblePost={visiblePost}
+                setVisibleReact={setVisibleReact}
+                setVisibleReactComment={setVisibleReactComment}
+                visibleReactComment={visibleReactComment}
+                getNotifications={getNotifications}
+                dataFriend={dataFriend}
+                getDataFriend={getDataFriend}
+                dataByBirthday={dataByBirthday}
+                getDatafriendsByBirthday={getDatafriendsByBirthday}
+                setVisiblePhoto={setVisiblePhoto}
+                dataRoomMess={dataRoomMess}
+                onlineUsers={onlineUsers}
+                setReport={setReport}
+                setReportGroup={setReportGroup}
+                loadingListMess={loadingListMess}
+                getListMess={getListMess}
+                listMess={listMess}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/search/searchTerm=:searchTerm"
+            element={
+              <Search
+                socket={socket}
+                getAllPosts={getAllPosts}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                getDataFriend={getDataFriend}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                getGroups={getGroups}
+              />
+            }
+            exact
+          />
+          <Route
+            path="/search/:typeSearch/searchTerm=:searchTerm"
+            element={
+              <Search
+                socket={socket}
+                getAllPosts={getAllPosts}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                getDataFriend={getDataFriend}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+                getGroups={getGroups}
+              />
+            }
+            exact
+          />
+
           <Route path="/activate/:token" element={<Activate />} exact />
-          <Route path="/reset" element={<Reset />} exact />
-          <Route path="/search" element={<Search />} exact />
-          <Route path="/message" element={<Messages />} exact />
-          <Route path="/saved" element={<Saved />} exact />
-          <Route path="/groups" element={<Groups />} exact />
-          <Route path="/groups/:type" element={<Groups />} exact />
-          <Route path="/group/:id" element={<PageGroup />} exact />
-          <Route path="/verify" element={<Verifi />} exact />
-          <Route path="/verify/register" element={<VerifiRegister />} exact />
+          <Route
+            path="/explore"
+            element={
+              <Explore
+                socket={socket}
+                getAllPosts={getAllPosts}
+                notifications={notifications}
+                setNotifi={setNotifi}
+                getListMess={getListMess}
+                listMess={listMess}
+                onlineUsers={onlineUsers}
+                openChatWindow={openChatWindow}
+                setOpenChatWindows={setOpenChatWindows}
+              />
+            }
+            exact
+          />
         </Route>
         <Route element={<NotLoggedInRoutes />}>
-          <Route path="/login" element={<Login />} exact />
+          <Route path="/login" element={<Login socket={socket} />} exact />
         </Route>
-        <Route path="*" element={<NotFoundPage />} />
+        <Route path="/reset" element={<Reset />} />
+        <Route path="/verifi" element={<Verifi socket={socket} />} />
+        <Route
+          path="/verifi/:emailRegister"
+          element={<VerifiRegister socket={socket} />}
+        />
+        <Route
+          path="*"
+          element={
+            <NotFoundPage
+              socket={socket}
+              getAllPosts={getAllPosts}
+              notifications={notifications}
+              setVisiblePost={setVisiblePost}
+              setNotifi={setNotifi}
+              getListMess={getListMess}
+              listMess={listMess}
+              onlineUsers={onlineUsers}
+              openChatWindow={openChatWindow}
+              setOpenChatWindows={setOpenChatWindows}
+            />
+          }
+        />
       </Routes>
-      {visible && <CreatePostPopup user={user} setVisible={setVisible} />}
-      {visiblePost && <PostDetail user={user} post={visiblePost} setVisiblePost={setVisiblePost} />}
-      {visiblePhoto && <PhotoPopup user={user} post={visiblePhoto} setVisiblePhoto={setVisiblePhoto} />}
-      {visibleReact && <ReactPopup user={user} post={visibleReact} setVisibleReact={setVisibleReact} />}
-      {visibleReactComment && <ReactCommentPopup user={user} comment={visibleReactComment} setVisibleReactComment={setVisibleReactComment} />}
-      {visiblePhotoDetail && <PhotoDetail user={user} post={visiblePhotoDetail} setVisiblePhotoDetail={setVisiblePhotoDetail} />}
-      {report && <ReportMenu user={user} post={report} setReport={setReport} />}
-      {reportGroup && <ReportGroupMenu user={user} post={reportGroup} setReportGroup={setReportGroup} />}
-      {report_Profile && <ReportMenuProfile user={user} post={report_Profile} setReport_Profile={setReport_Profile} />}
-      {mess && <ChatScreen user={user} mess={mess} setMess={setMess} />}
-      {openChatWindowMess && <RoomMessScreen user={user} room={openChatWindowMess} setOpenChatWindowMess={setOpenChatWindowMess} />}
     </div>
   );
 }

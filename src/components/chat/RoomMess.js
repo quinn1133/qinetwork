@@ -483,8 +483,8 @@ export default function Room_Mess_screen({
               color: "#65676B",
             }}
           >
-            <p>Facebook </p>
-            <p>Your group chat on Facebook</p>
+            <p>Qi </p>
+            <p>Your group chat on Qi</p>
           </div>
           {!loadingMess ? (
             <>
